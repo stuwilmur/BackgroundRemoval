@@ -1,14 +1,13 @@
-# Background Removal App
+# My App
 
-A Streamlit application that allows users to upload an image and automatically remove its background using the [rembg](https://github.com/danielgatis/rembg) library.
+A Streamlit application that allows users to upload a fundus image and create a printable net which can be cut out and assembled into a simulation eye.
 
 ## Features
 
 - Upload images (PNG, JPG, JPEG formats supported)
-- Automatic background removal
+- Process the image
 - Download the processed image
-- Handles large images with automatic resizing
-- Progress indicators for better user experience
+- Simple progress indicator for better user experience
 
 ## Getting Started
 
@@ -21,8 +20,8 @@ A Streamlit application that allows users to upload an image and automatically r
 
 1. Clone the repository
 ```bash
-git clone https://github.com/tyler-simons/BackgroundRemoval.git
-cd BackgroundRemoval
+git clone https://github.com/stuwilmur/sim-eye-app.git
+cd sim-eye-app
 ```
 
 2. Create a virtual environment (optional but recommended)
@@ -39,7 +38,7 @@ pip install -r requirements.txt
 ### Running the App
 
 ```bash
-streamlit run bg_remove.py
+streamlit run main.py
 ```
 
 The app will be available at http://localhost:8501 in your web browser.
@@ -47,9 +46,11 @@ The app will be available at http://localhost:8501 in your web browser.
 ## Usage Guidelines
 
 - Maximum file size: 10MB
-- Large images will be automatically resized for processing
 - Supported formats: PNG, JPG, JPEG
 
 ## License
 
 MIT
+
+## Related repo
+[stuwilmur/sim-eye](https://github.com/stuwilmur/sim-eye)

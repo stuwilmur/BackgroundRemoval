@@ -1,18 +1,16 @@
 import streamlit as st
-from rembg import remove
 from PIL import Image
-import numpy as np
 from io import BytesIO
-import base64
 import os
 import traceback
 import time
+import gore
 
-st.set_page_config(layout="wide", page_title="Image Background Remover")
+st.set_page_config(layout="wide", page_title="Gore Sim-Eye Creator")
 
-st.write("## Remove background from your image")
+st.write("## Create a printable simulation eye")
 st.write(
-    ":dog: Try uploading an image to watch the background magically removed. Full quality images can be downloaded from the sidebar. This code is open source and available [here](https://github.com/tyler-simons/BackgroundRemoval) on GitHub. Special thanks to the [rembg library](https://github.com/danielgatis/rembg) :grin:"
+    ":eye: Upload a fundus image to create a printable image that may be cut out and assembled into a simulation eye. :scissors:"
 )
 st.sidebar.write("## Upload and download :gear:")
 
@@ -29,6 +27,10 @@ def convert_image(img):
     byte_im = buf.getvalue()
     return byte_im
 
+# Convert a hex colour string to an RGBA tuple
+def hex_to_rgba(hex):
+  return tuple(int(hex[i:i+2], 16) for i in (1, 3, 5)) + (255,)
+
 # Resize image while maintaining aspect ratio
 def resize_image(image, max_size):
     width, height = image.size
@@ -44,21 +46,26 @@ def resize_image(image, max_size):
     
     return image.resize((new_width, new_height), Image.LANCZOS)
 
-@st.cache_data
-def process_image(image_bytes):
+def process_image(image_bytes, path):
     """Process image with caching to avoid redundant processing"""
     try:
         image = Image.open(BytesIO(image_bytes))
-        # Resize large images to prevent memory issues
-        resized = resize_image(image, MAX_IMAGE_SIZE)
         # Process the image
-        fixed = remove(resized)
+        fixed = gore.make_rotary_adjusted(
+            path, 
+            gore.deg2rad(imageExtent)/2, 
+            numGores, 
+            gore.deg2rad(noCutExtent)/2, 
+            rotation, 
+            quality, 
+            gore.deg2rad(retinalExtent)/2,
+            background_colour=hex_to_rgba(hexColour))
         return image, fixed
     except Exception as e:
         st.error(f"Error processing image: {str(e)}")
         return None, None
 
-def fix_image(upload):
+def fix_image(upload, path):
     try:
         start_time = time.time()
         progress_bar = st.sidebar.progress(0)
@@ -83,7 +90,7 @@ def fix_image(upload):
         progress_bar.progress(30)
         
         # Process image (using cache if available)
-        image, fixed = process_image(image_bytes)
+        image, fixed = process_image(image_bytes, path)
         if image is None or fixed is None:
             return
         
@@ -94,15 +101,15 @@ def fix_image(upload):
         col1.write("Original Image :camera:")
         col1.image(image)
         
-        col2.write("Fixed Image :wrench:")
+        col2.write("Gored Image :wrench:")
         col2.image(fixed)
         
         # Prepare download button
         st.sidebar.markdown("\n")
         st.sidebar.download_button(
-            "Download fixed image", 
+            "Download gored image", 
             convert_image(fixed), 
-            "fixed.png", 
+            "gored.png", 
             "image/png"
         )
         
@@ -123,24 +130,39 @@ my_upload = st.sidebar.file_uploader("Upload an image", type=["png", "jpg", "jpe
 # Information about limitations
 with st.sidebar.expander("ℹ️ Image Guidelines"):
     st.write("""
+    - Image should be square with fundus tight to the edges
     - Maximum file size: 10MB
-    - Large images will be automatically resized
     - Supported formats: PNG, JPG, JPEG
     - Processing time depends on image size
     """)
+
+imageExtent = st.sidebar.slider("Image extent(degrees)", min_value=10, max_value=180, value=60)
+
+with st.sidebar.expander("More options"):
+    numGores = st.slider("Number of gores", min_value=3, max_value=12, value=5)
+    retinalExtent = st.slider("Retinal extent(degrees)", min_value=10, max_value=360, value = 180)
+    noCutExtent = st.slider("No-cut extent(degrees)", min_value = 0, max_value = 90, value = 20)
+    rotation = st.number_input("Rotation(degrees)", min_value=-180, max_value=180, value=0)
+    quality = st.slider("Quality(%)", min_value = 10,max_value = 100,value=40)
+    hexColour = st.color_picker("Background colour")
 
 # Process the image
 if my_upload is not None:
     if my_upload.size > MAX_FILE_SIZE:
         st.error(f"The uploaded file is too large. Please upload an image smaller than {MAX_FILE_SIZE/1024/1024:.1f}MB.")
     else:
-        fix_image(upload=my_upload)
+        uploaded_filename = my_upload.name
+        name, extension = os.path.splitext(uploaded_filename)
+        temp_file = "temp" + extension
+        with open(temp_file, 'wb') as fw:
+            fw.write(my_upload.read())
+        fix_image(upload=my_upload, path=temp_file)
 else:
     # Try default images in order of preference
-    default_images = ["./zebra.jpg", "./wallaby.png"]
+    default_images = ["./img1.jpg", "./img2.png"]
     for img_path in default_images:
         if os.path.exists(img_path):
-            fix_image(img_path)
+            fix_image(img_path, img_path)
             break
     else:
         st.info("Please upload an image to get started!")
