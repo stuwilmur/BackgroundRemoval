@@ -1,4 +1,4 @@
-# My App
+# Simulation Eye App
 
 A Streamlit application that allows users to upload a fundus image and create a printable net which can be cut out and assembled into a simulation eye.
 
